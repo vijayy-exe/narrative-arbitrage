@@ -1,0 +1,110 @@
+# Asset Basket Configuration
+#
+# wikipedia_title: the EXACT current English Wikipedia article title (spaces,
+#   not underscores -- underscores are added at request time). Verified by
+#   querying the MediaWiki API (action=query&redirects=1) on 2026-09-05 and
+#   confirming the title resolves to a real, non-missing page. Do not derive
+#   this from `name` in code -- several of these do NOT match the display
+#   name (see notes below).
+#
+# subreddits: relevant, real, currently-active subreddits to pull comment/post
+#   volume from (used as reddit.subreddit("+".join(subreddits)) in reddit.py).
+#   Chosen for topical relevance, not verified live (Reddit's public
+#   unauthenticated JSON endpoints return HTTP 403 as of 2026-09, so existence
+#   could not be confirmed via a no-auth API call in this environment -- these
+#   names are real, well-known subreddits from general knowledge, but should
+#   be re-checked once real PRAW credentials are available).
+#   STATUS (2026-09): Reddit no longer issues script-app API credentials
+#   self-serve -- reddit.com/prefs/apps now redirects app creation to a
+#   manual "Responsible Builder Policy" support-ticket review with no
+#   guaranteed approval or timeline (verified live). reddit.py is left as-is
+#   (it works if credentials are ever obtained) but Reddit ingestion is a
+#   documented, currently-blocked gap, not something wired into this run.
+#
+# hn_query: search term used against the Hacker News Algolia API
+#   (hn.algolia.com/api/v1/search_by_date) by src/data_pipeline/hackernews.py.
+#   Falls back to `name` when absent. Only set where the bare `name` (or
+#   ticker) gives noisy/irrelevant results -- verified live against the full
+#   2023-01-01..2024-06-01 window on 2026-09-07:
+#     - bare tickers are unusable: "AMC" alone matches 29,910 stories (matches
+#       "AMC" as a substring/acronym all over HN, not the asset), "GME"
+#       alone matches 40,386 -- both far too noisy to be a real per-day
+#       attention signal.
+#     - the qualified terms below were verified to return small, plausible,
+#       on-topic hit counts instead (in parens): "AMC stock" (14), "GameStop
+#       stock" (16), "PEPE coin" (32), "Bored Ape" (91), "Shiba Inu coin" (2).
+#     - DOGE ("Dogecoin", 30) and cryptopunks ("CryptoPunks", 2) were fine
+#       with the existing `name` as-is, so no override needed there.
+#
+# biz_query: search term used against 4chan's /biz/ catalog by
+#   src/data_pipeline/fourchan_biz.py -- LIVE-ONLY (see that module's
+#   docstring: /biz/ has no historical archive, so this signal only exists
+#   going forward via src/realtime/scheduler.py, never as a historical
+#   backfill column). Falls back to `name` when absent. Bare tickers work
+#   better here than on HN since /biz/'s live catalog is tiny (~200 threads
+#   at a time, verified 2026-09-20) so cross-topic noise is far less likely
+#   in a snapshot -- but qualified terms are still used for the two assets
+#   whose bare ticker/name is itself an ambiguous common word or acronym
+#   ("AMC" is also a common abbreviation elsewhere; "Shiba Inu" bare name
+#   risks matching dog-breed chatter the same way it does on Wikipedia, see
+#   `wikipedia_title`'s note below for SHIB).
+
+meme_stocks:
+  - ticker: "GME"
+    name: "GameStop"
+    wikipedia_title: "GameStop"
+    subreddits: ["Superstonk", "GME", "wallstreetbets"]
+    hn_query: "GameStop stock"
+    biz_query: "GME"
+  - ticker: "AMC"
+    name: "AMC Entertainment"
+    # NOTE: "AMC Entertainment" is NOT the real article title -- it redirects
+    # to "AMC Theatres". Using the naive `name.replace(" ", "_")` derivation
+    # would 404 or silently hit a redirect chain depending on API params.
+    wikipedia_title: "AMC Theatres"
+    subreddits: ["amcstock", "Superstonk", "wallstreetbets"]
+    hn_query: "AMC stock"
+    biz_query: "AMC stock"
+
+small_cap_crypto:
+  - symbol: "PEPE"
+    name: "Pepe"
+    # NOTE (known limitation): there is NO dedicated Wikipedia article for the
+    # Pepe *cryptocurrency* -- "Pepe (cryptocurrency)", "Pepecoin", and
+    # "Pepe (memecoin)" all resolve to missing=True via the MediaWiki API.
+    # The only real, existing page is "Pepe the Frog" (the meme itself, which
+    # predates and drives the coin's narrative). We use it as the best
+    # available proxy, but this means the Wikipedia signal for PEPE reflects
+    # general meme attention, not coin-specific attention -- document this
+    # caveat wherever PEPE Wikipedia features are used/interpreted.
+    wikipedia_title: "Pepe the Frog"
+    subreddits: ["dogecoin", "CryptoCurrency", "pepecoin"]
+    hn_query: "PEPE coin"
+    biz_query: "PEPE"
+  - symbol: "DOGE"
+    name: "Dogecoin"
+    wikipedia_title: "Dogecoin"
+    subreddits: ["dogecoin", "CryptoCurrency"]
+    biz_query: "DOGE"
+  - symbol: "SHIB"
+    name: "Shiba Inu"
+    # NOTE: "Shiba Inu" (no qualifier) is the DOG BREED article. The
+    # cryptocurrency has its own disambiguated page.
+    wikipedia_title: "Shiba Inu (cryptocurrency)"
+    subreddits: ["Shibainucoin", "SHIBArmy", "CryptoCurrency"]
+    hn_query: "Shiba Inu coin"
+    biz_query: "SHIB"
+
+nft_collections:
+  - id: "boredapeyachtclub"
+    name: "Bored Ape Yacht Club"
+    # NOTE: "Bored Ape Yacht Club" redirects to "Bored Ape" (article was
+    # renamed/merged). Using the display name directly still resolves via
+    # the redirect, but we pin the canonical title explicitly.
+    wikipedia_title: "Bored Ape"
+    subreddits: ["BoredApeYachtClub", "NFT"]
+    hn_query: "Bored Ape"
+  - id: "cryptopunks"
+    name: "CryptoPunks"
+    wikipedia_title: "CryptoPunks"
+    subreddits: ["cryptopunks", "NFT"]

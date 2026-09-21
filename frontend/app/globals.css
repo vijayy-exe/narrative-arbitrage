@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+/* ── Trading-terminal design system ───────────────────────────────────────
+   Semantic palette used EVERYWHERE in this app -- every chart, badge, and
+   numeric display reuses these same four data-role colors so a viewer
+   learns the system once and reads every chart the same way:
+     --color-gain / --color-loss   : realized outcome (P&L, returns)
+     --color-attention-signal      : raw attention-derivative data (Wikipedia,
+                                      Trends, HN, 4chan) -- what the agent SEES
+     --color-agent-action          : the RL policy's own decisions (position
+                                      size, target allocation) -- what the
+                                      agent DOES, kept visually distinct from
+                                      both the signal it read and the outcome
+                                      it produced
+     --color-price-reward          : price/reward data used only for
+                                      evaluation, never as model input -- a
+                                      neutral tone marking "ground truth /
+                                      scorekeeping," not signal or decision
+*/
+:root {
+  --background: #0a0a0f;
+  --background-elevated: #121218;
+  --background-elevated-2: #191922;
+  --border: #26262f;
+  --border-subtle: #1a1a22;
+  --foreground: #e8e8ed;
+  --foreground-muted: #8b8b9a;
+  --foreground-faint: #5c5c6a;
+
+  --color-gain: #22c55e;
+  --color-gain-dim: #14532d;
+  --color-loss: #f43f5e;
+  --color-loss-dim: #4c0519;
+  --color-attention-signal: #38bdf8;
+  --color-attention-signal-2: #818cf8;
+  --color-attention-signal-3: #2dd4bf;
+  --color-agent-action: #f59e0b;
+  --color-agent-action-dim: #78350f;
+  --color-price-reward: #71717a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Numeric/financial displays (Sharpe, P&L, position sizes) always use the
+   monospace terminal font with tabular figures, so columns of numbers
+   align and every value reads as "data," not prose. */
+.font-numeric {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@keyframes pulse-glow {
+  0% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0px currentColor);
+  }
+  50% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0px currentColor);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1.4s ease-in-out 1;
+}
